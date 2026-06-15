@@ -7,9 +7,19 @@ export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  let nickname: string | null = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('id', user.id)
+      .single()
+    nickname = profile?.nickname ?? null
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Header user={user} />
+      <Header user={user} nickname={nickname} />
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
         {/* 히어로 섹션 */}

@@ -8,11 +8,17 @@ export default async function MarketPage() {
 
   if (!user) redirect('/auth/signin')
 
-  const nickname = user.user_metadata?.nickname ?? user.email?.split('@')[0] ?? '고구마'
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('nickname, email, avatar_url, created_at')
+    .eq('id', user.id)
+    .single()
+
+  const nickname = profile?.nickname ?? user.email?.split('@')[0] ?? '고구마'
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header user={user} />
+      <Header user={user} nickname={nickname} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
         {/* 환영 배너 */}
@@ -20,6 +26,22 @@ export default async function MarketPage() {
           <p className="text-violet-200 text-sm mb-1">안녕하세요 👋</p>
           <h2 className="text-2xl font-black mb-1">{nickname}님!</h2>
           <p className="text-violet-100 text-sm">오늘도 좋은 거래 하세요 🍠</p>
+        </div>
+
+        {/* 프로필 요약 카드 */}
+        <div className="bg-white rounded-2xl border border-violet-100 p-5 mb-8 flex items-center gap-4 shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-violet-100 flex items-center justify-center text-2xl font-black text-violet-600">
+            {nickname.slice(0, 1)}
+          </div>
+          <div>
+            <p className="font-bold text-gray-800">{nickname}</p>
+            <p className="text-sm text-gray-400">{profile?.email ?? user.email}</p>
+            <p className="text-xs text-violet-400 mt-0.5">
+              가입일 {profile?.created_at
+                ? new Date(profile.created_at).toLocaleDateString('ko-KR')
+                : '-'}
+            </p>
+          </div>
         </div>
 
         {/* 메뉴 그리드 */}
@@ -32,7 +54,7 @@ export default async function MarketPage() {
           ].map(({ icon, label, desc }) => (
             <button
               key={label}
-              className="bg-white rounded-2xl p-5 text-center border border-violet-100 hover:border-violet-300 hover:shadow-md transition-all group"
+              className="bg-white rounded-2xl p-5 text-center border border-violet-100 hover:border-violet-300 hover:shadow-md transition-all"
             >
               <div className="text-3xl mb-2">{icon}</div>
               <div className="font-bold text-gray-800 text-sm">{label}</div>
@@ -41,7 +63,7 @@ export default async function MarketPage() {
           ))}
         </div>
 
-        {/* 상품 목록 (준비중) */}
+        {/* 상품 목록 준비중 */}
         <div className="bg-white rounded-3xl border border-violet-100 p-8 text-center">
           <div className="text-5xl mb-4">🍠</div>
           <h3 className="text-lg font-bold text-gray-700 mb-2">상품 등록 기능 준비 중!</h3>

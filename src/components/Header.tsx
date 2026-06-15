@@ -7,9 +7,10 @@ import { User } from '@supabase/supabase-js'
 
 interface Props {
   user: User | null
+  nickname?: string | null
 }
 
-export default function Header({ user }: Props) {
+export default function Header({ user, nickname }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -18,6 +19,8 @@ export default function Header({ user }: Props) {
     router.push('/')
     router.refresh()
   }
+
+  const displayName = nickname ?? user?.email?.split('@')[0] ?? '고구마'
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-violet-100 shadow-sm">
@@ -41,7 +44,7 @@ export default function Header({ user }: Props) {
                 중고거래
               </Link>
               <span className="text-sm text-gray-400 hidden sm:block">
-                {user.email?.split('@')[0]}님
+                {displayName}님
               </span>
               <button
                 onClick={handleSignOut}
