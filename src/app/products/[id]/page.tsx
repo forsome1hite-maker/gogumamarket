@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/Header'
+import StatusChanger from '@/components/StatusChanger'
+import DeleteButton from '@/components/DeleteButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,23 +175,16 @@ export default async function ProductDetailPage({
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
 
           {isOwner ? (
-            /* 내 상품: 수정 + 상태 변경 */
+            /* 내 상품: 삭제 + 수정 + 상태 변경 */
             <>
-              <div className="flex-1">
-                <p className="text-xs text-gray-400">내가 등록한 상품</p>
-                <p className="font-black text-gray-900 text-lg leading-tight">
-                  {product.price === 0 ? '무료나눔' : `${product.price.toLocaleString('ko-KR')}원`}
-                </p>
-              </div>
+              <DeleteButton productId={product.id} />
               <Link
                 href={`/sell/edit/${product.id}`}
                 className="px-5 py-3 bg-violet-100 text-violet-700 font-bold text-sm rounded-xl hover:bg-violet-200 transition-all"
               >
                 수정하기
               </Link>
-              <button className="px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-violet-200">
-                상태 변경
-              </button>
+              <StatusChanger productId={product.id} currentStatus={product.status} />
             </>
           ) : (
             /* 타인 상품: 채팅하기 */
