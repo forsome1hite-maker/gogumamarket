@@ -1,65 +1,80 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import GogumaCharacter from '@/components/GogumaCharacter'
+import Header from '@/components/Header'
 
-export default function Home() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen flex flex-col">
+      <Header user={user} />
+
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
+        {/* 히어로 섹션 */}
+        <div className="text-center max-w-xl">
+          <GogumaCharacter size={200} className="mx-auto mb-6 drop-shadow-xl" />
+
+          <h1 className="text-4xl sm:text-5xl font-black text-violet-800 mb-3 tracking-tight">
+            고구마마켓
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-violet-500 font-medium mb-2">
+            🍠 우리 동네 중고거래
           </p>
+          <p className="text-gray-500 text-base mb-10">
+            가깝고 따뜻한 이웃과 안전하게 중고 물건을 사고 팔아요
+          </p>
+
+          {user ? (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/market"
+                className="px-8 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl text-lg shadow-lg shadow-violet-200 transition-all hover:scale-105"
+              >
+                거래하러 가기 →
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/auth/signup"
+                className="px-8 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl text-lg shadow-lg shadow-violet-200 transition-all hover:scale-105"
+              >
+                무료로 시작하기
+              </Link>
+              <Link
+                href="/auth/signin"
+                className="px-8 py-3.5 bg-white hover:bg-violet-50 text-violet-700 font-bold rounded-2xl text-lg border-2 border-violet-200 transition-all hover:scale-105"
+              >
+                로그인
+              </Link>
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* 특징 카드 */}
+        <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl w-full">
+          {[
+            { icon: '🔒', title: '안전한 거래', desc: '검증된 이웃과 신뢰 있는 중고 거래' },
+            { icon: '📍', title: '동네 직거래', desc: '내 근처 물건만 쏙쏙 모아봐요' },
+            { icon: '💬', title: '편한 채팅', desc: '1:1 채팅으로 간편하게 흥정해요' },
+          ].map(({ icon, title, desc }) => (
+            <div
+              key={title}
+              className="bg-white rounded-2xl p-6 text-center border border-violet-100 shadow-sm hover:shadow-md hover:border-violet-300 transition-all"
+            >
+              <div className="text-3xl mb-3">{icon}</div>
+              <h3 className="font-bold text-violet-800 mb-1">{title}</h3>
+              <p className="text-sm text-gray-500">{desc}</p>
+            </div>
+          ))}
         </div>
       </main>
+
+      <footer className="py-6 text-center text-sm text-violet-300">
+        © 2025 고구마마켓 🍠
+      </footer>
     </div>
-  );
+  )
 }
