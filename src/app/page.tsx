@@ -26,9 +26,25 @@ export default async function HomePage() {
         <div className="text-center max-w-xl">
           <GogumaCharacter size={200} className="mx-auto mb-6 drop-shadow-xl" />
 
-          <h1 className="text-4xl sm:text-5xl font-black text-violet-800 mb-3 tracking-tight">
-            고구마마켓
-          </h1>
+          <div className="relative inline-flex items-center justify-center mb-3">
+            <h1 className="text-4xl sm:text-5xl font-black text-violet-800 tracking-tight">
+              고구마마켓
+            </h1>
+            {/* 말풍선: 당근 아님! */}
+            <div className="absolute -right-2 -top-10 sm:-right-4 sm:-top-12">
+              <div className="relative bg-orange-400 text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-2xl shadow-md whitespace-nowrap rotate-6">
+                당근 아님! 🥕❌
+                {/* 말풍선 꼬리 */}
+                <div className="absolute -bottom-2 left-4 w-0 h-0"
+                  style={{
+                    borderLeft: '6px solid transparent',
+                    borderRight: '6px solid transparent',
+                    borderTop: '8px solid #fb923c',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
           <p className="text-lg text-violet-500 font-medium mb-2">
             🍠 우리 동네 중고거래
           </p>
