@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import GogumaCharacter from '@/components/GogumaCharacter'
+import GogumaField from '@/components/GogumaField'
 import Header from '@/components/Header'
 
 export default async function HomePage() {
@@ -79,8 +80,13 @@ export default async function HomePage() {
           )}
         </div>
 
+        {/* 고구마 밭 씬 */}
+        <div className="w-full max-w-3xl mt-10">
+          <GogumaField />
+        </div>
+
         {/* 특징 카드 */}
-        <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl w-full">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl w-full">
           {[
             { icon: '🔒', title: '안전한 거래', desc: '검증된 이웃과 신뢰 있는 중고 거래' },
             { icon: '📍', title: '동네 직거래', desc: '내 근처 물건만 쏙쏙 모아봐요' },
