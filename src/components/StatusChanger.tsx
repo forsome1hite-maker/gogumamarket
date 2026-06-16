@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { STATUS_OPTIONS } from '@/lib/constants'
@@ -36,19 +37,16 @@ export default function StatusChanger({ productId, currentStatus }: Props) {
         {current?.emoji} 상태 변경
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center sm:justify-center">
+      {open && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           {/* 딤 처리 */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => !loading && setOpen(false)}
           />
 
-          {/* 바텀 시트 */}
-          <div className="relative w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 animate-[slideUp_0.25s_ease-out]">
-            {/* 핸들 바 */}
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5 sm:hidden" />
-
+          {/* 팝업 */}
+          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 max-h-[80vh] overflow-y-auto">
             <h3 className="text-lg font-black text-gray-800 mb-1">판매 상태 변경</h3>
             <p className="text-sm text-gray-400 mb-5">현재: <strong className="text-violet-600">{current?.label}</strong></p>
 
@@ -90,15 +88,9 @@ export default function StatusChanger({ productId, currentStatus }: Props) {
               취소
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to   { transform: translateY(0);    opacity: 1; }
-        }
-      `}</style>
     </>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -31,8 +32,8 @@ export default function DeleteButton({ productId }: { productId: string }) {
         삭제
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      {open && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           {/* 딤 */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -40,7 +41,7 @@ export default function DeleteButton({ productId }: { productId: string }) {
           />
 
           {/* 확인 다이얼로그 */}
-          <div className="relative bg-white rounded-3xl shadow-2xl p-7 w-full max-w-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="relative bg-white rounded-3xl shadow-2xl p-7 w-full max-w-sm">
             <div className="text-4xl text-center mb-4">🗑️</div>
             <h3 className="text-lg font-black text-gray-800 text-center mb-2">
               판매글을 삭제할까요?
@@ -65,15 +66,9 @@ export default function DeleteButton({ productId }: { productId: string }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to   { opacity: 1; transform: scale(1);    }
-        }
-      `}</style>
     </>
   )
 }
