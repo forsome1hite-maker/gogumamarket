@@ -32,11 +32,13 @@ interface Product {
 }
 
 interface Props {
-  product:  Product
-  nickname: string
+  product:      Product
+  nickname:     string
+  likeCount:    number
+  commentCount: number
 }
 
-export default function ProductCard({ product, nickname }: Props) {
+export default function ProductCard({ product, nickname, likeCount, commentCount }: Props) {
   const thumbnail = product.image_urls?.[0]
 
   return (
@@ -64,7 +66,7 @@ export default function ProductCard({ product, nickname }: Props) {
       {/* 내용 */}
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         <div>
-          <p className="font-bold text-gray-800 text-sm leading-snug line-clamp-2 mb-1.5">
+          <p className="font-black text-gray-900 text-lg sm:text-xl leading-snug line-clamp-2 mb-1.5">
             {product.title}
           </p>
           <div className="flex flex-wrap gap-1 mb-2">
@@ -97,6 +99,10 @@ export default function ProductCard({ product, nickname }: Props) {
             <span>{timeAgo(product.created_at)}</span>
             <span>·</span>
             <span>조회 {product.views}</span>
+            <span>·</span>
+            <span className="text-pink-500">❤️ {likeCount}</span>
+            <span>·</span>
+            <span className="text-violet-500">💬 {commentCount}</span>
           </p>
         </div>
       </div>

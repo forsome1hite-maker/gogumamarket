@@ -5,6 +5,8 @@ import Header from '@/components/Header'
 import StatusChanger from '@/components/StatusChanger'
 import DeleteButton from '@/components/DeleteButton'
 import ImageGallery from '@/components/ImageGallery'
+import LikeButton from '@/components/LikeButton'
+import CommentSection, { type CommentRow } from '@/components/CommentSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,16 +54,27 @@ export default async function ProductDetailPage({
 
   if (error || !product) notFound()
 
-  // 판매자 + 내 프로필 병렬 조회
-  const [{ data: seller }, { data: myProfile }] = await Promise.all([
-    supabase.from('profiles').select('nickname, created_at').eq('id', product.user_id).single(),
+  // 판매자 + 내 프로필 + 좋아요 + 댓글 병렬 조회
+  const [
+    { data: sellerRows },
+    { data: myProfile },
+    { data: likes },
+    { data: comments },
+  ] = await Promise.all([
+    supabase.rpc('get_public_profile', { p_user_id: product.user_id }),
     user
       ? supabase.from('profiles').select('nickname').eq('id', user.id).single()
       : Promise.resolve({ data: null }),
+    supabase.from('product_likes').select('user_id').eq('product_id', id),
+    supabase.rpc('get_product_comments', { p_product_id: id }),
   ])
 
+  const seller     = sellerRows?.[0] ?? null
   const nickname   = myProfile?.nickname ?? null
   const isOwner    = user?.id === product.user_id
+  const likeCount  = likes?.length ?? 0
+  const likedByMe  = !!user && (likes ?? []).some((l) => l.user_id === user.id)
+  const commentList = (comments ?? []) as CommentRow[]
   const statusInfo = STATUS_LABELS[product.status] ?? STATUS_LABELS.selling
   const condInfo   = CONDITION_LABELS[product.condition]
 
@@ -94,10 +107,18 @@ export default async function ProductDetailPage({
           statusColor={statusInfo.color}
         />
 
-        {/* 판매자 정보 */}
-        <div className="bg-white rounded-2xl border border-violet-100 p-4 mb-4 flex items-center gap-3 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center font-black text-violet-600 text-lg shrink-0">
-            {seller?.nickname?.slice(0, 1) ?? '?'}
+        {/* 판매자 정보 (클릭 시 프로필로 이동) */}
+        <Link
+          href={`/users/${product.user_id}`}
+          className="bg-white rounded-2xl border border-violet-100 p-4 mb-4 flex items-center gap-3 shadow-sm hover:border-violet-300 transition-colors"
+        >
+          <div className="w-12 h-12 rounded-full bg-violet-100 overflow-hidden flex items-center justify-center font-black text-violet-600 text-lg shrink-0">
+            {seller?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={seller.avatar_url} alt={seller.nickname} className="w-full h-full object-cover" />
+            ) : (
+              seller?.nickname?.slice(0, 1) ?? '?'
+            )}
           </div>
           <div className="min-w-0">
             <p className="font-bold text-gray-800">{seller?.nickname ?? '알 수 없음'}</p>
@@ -107,12 +128,14 @@ export default async function ProductDetailPage({
                 : '-'}
             </p>
           </div>
-          {isOwner && (
+          {isOwner ? (
             <span className="ml-auto shrink-0 text-xs px-2.5 py-1 bg-violet-100 text-violet-600 font-bold rounded-lg">
               내 상품
             </span>
+          ) : (
+            <span className="ml-auto shrink-0 text-violet-300 text-lg">›</span>
           )}
-        </div>
+        </Link>
 
         {/* 상품 핵심 정보 */}
         <div className="bg-white rounded-2xl border border-violet-100 p-5 mb-4 shadow-sm">
@@ -162,6 +185,26 @@ export default async function ProductDetailPage({
             <span className="text-gray-200">·</span>
             <span>조회 {product.views}</span>
           </div>
+        </div>
+
+        {/* 좋아요 */}
+        <div className="mt-4">
+          <LikeButton
+            productId={product.id}
+            userId={user?.id ?? null}
+            isOwner={isOwner}
+            initialCount={likeCount}
+            initiallyLiked={likedByMe}
+          />
+        </div>
+
+        {/* 댓글 */}
+        <div className="mt-4">
+          <CommentSection
+            productId={product.id}
+            userId={user?.id ?? null}
+            comments={commentList}
+          />
         </div>
 
       </main>

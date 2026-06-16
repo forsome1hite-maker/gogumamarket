@@ -13,8 +13,68 @@ const SPOTS = [
 const WALK_SPEED = 0.055   // %/frame (≈60fps → ~18초에 한 바퀴)
 const DIG_RANGE  = 3.2
 
-// ── 땅속 미니 고구마 ─────────────────────────────────
-function BuriedGoguma({ visible, fresh }: { visible: boolean; fresh: boolean }) {
+// ── 땅속 미니 고구마 SVG ──────────────────────────────
+function MiniGoguma() {
+  return (
+    <svg width="38" height="50" viewBox="0 0 95 125" fill="none">
+      {/* 줄기 잎 */}
+      <path d="M44 18 Q37 4 27 8 Q33 16 44 22" fill="#15803d" />
+      <path d="M47 18 Q56 3 65 8 Q58 15 47 22" fill="#16a34a" />
+      {/* 몸통 외곽 */}
+      <ellipse cx="45" cy="76" rx="34" ry="42" fill="#4C1D95" />
+      {/* 몸통 */}
+      <ellipse cx="45" cy="73" rx="27" ry="34" fill="#7C3AED" />
+      {/* 하이라이트 */}
+      <ellipse cx="35" cy="54" rx="11" ry="8" fill="rgba(255,255,255,0.18)" />
+      {/* 쪼개진 윗부분(속살) */}
+      <ellipse cx="45" cy="47" rx="19" ry="10" fill="#FDE68A" />
+      <ellipse cx="43" cy="44" rx="11" ry="6"  fill="#FFFBEB" opacity="0.55" />
+      {/* 눈 흰자 */}
+      <circle cx="33" cy="65" r="9" fill="white" />
+      <circle cx="57" cy="65" r="9" fill="white" />
+      {/* 눈동자 */}
+      <circle cx="34" cy="66" r="5.5" fill="#1E1B4B" />
+      <circle cx="58" cy="66" r="5.5" fill="#1E1B4B" />
+      {/* 눈 반짝 */}
+      <circle cx="36" cy="63" r="2.5" fill="white" />
+      <circle cx="60" cy="63" r="2.5" fill="white" />
+      {/* 볼터치 */}
+      <ellipse cx="20" cy="75" rx="9" ry="5.5" fill="#FDA4AF" opacity="0.65" />
+      <ellipse cx="70" cy="75" rx="9" ry="5.5" fill="#FDA4AF" opacity="0.65" />
+      {/* 입 */}
+      <path d="M30 84 Q45 96 60 84" stroke="#1E1B4B" strokeWidth="3" fill="none" strokeLinecap="round" />
+      {/* 팔 */}
+      <ellipse cx="12"  cy="74" rx="13" ry="7" fill="#5B21B6" transform="rotate(-20 12 74)" />
+      <ellipse cx="78" cy="74" rx="13" ry="7" fill="#5B21B6" transform="rotate(20 78 74)" />
+    </svg>
+  )
+}
+
+// ── 땅속 미니 당근 SVG (가끔 등장하는 라이벌!) ─────────
+function MiniCarrot() {
+  return (
+    <svg width="32" height="50" viewBox="0 0 70 110" fill="none">
+      {/* 잎 */}
+      <path d="M35 32 Q29 8 18 6 Q25 20 32 32" fill="#16a34a" />
+      <path d="M35 30 Q35 5 35 3 Q43 16 39 30" fill="#15803d" />
+      <path d="M35 32 Q41 8 52 6 Q45 20 38 32" fill="#22c55e" />
+      {/* 몸통 */}
+      <path d="M21 35 Q35 30 49 35 L38 100 Q35 107 32 100 Z" fill="#fb923c" />
+      <path d="M24 37 Q35 33 46 37 L39 78 Q35 82 31 78 Z" fill="#fdba74" opacity="0.5" />
+      {/* 결무늬 */}
+      <path d="M28 48 L43 52" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+      <path d="M27 62 L41 65" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+      <path d="M30 76 L39 78" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+      {/* 짓궂은 얼굴 */}
+      <circle cx="30" cy="47" r="3.2" fill="#7c2d12" />
+      <circle cx="41" cy="47" r="3.2" fill="#7c2d12" />
+      <path d="M30 56 Q35 60 41 56" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── 땅속에서 솟는 아이템 (고구마 또는 당근) ───────────
+function BuriedItem({ visible, fresh, isCarrot }: { visible: boolean; fresh: boolean; isCarrot: boolean }) {
   return (
     <div className="relative flex flex-col items-center" style={{ height: 56 }}>
       {/* 반짝 효과 */}
@@ -31,44 +91,14 @@ function BuriedGoguma({ visible, fresh }: { visible: boolean; fresh: boolean }) 
         </>
       )}
 
-      {/* 미니 고구마 SVG */}
+      {/* 솟아오르는 아이템 */}
       <div style={{
         transform: visible ? 'translateY(0) scale(1)' : 'translateY(110%) scale(0.5)',
         opacity:   visible ? 1 : 0,
         transition: 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.28s ease',
         transformOrigin: 'bottom center',
       }}>
-        <svg width="38" height="50" viewBox="0 0 95 125" fill="none">
-          {/* 줄기 잎 */}
-          <path d="M44 18 Q37 4 27 8 Q33 16 44 22" fill="#15803d" />
-          <path d="M47 18 Q56 3 65 8 Q58 15 47 22" fill="#16a34a" />
-          {/* 몸통 외곽 */}
-          <ellipse cx="45" cy="76" rx="34" ry="42" fill="#4C1D95" />
-          {/* 몸통 */}
-          <ellipse cx="45" cy="73" rx="27" ry="34" fill="#7C3AED" />
-          {/* 하이라이트 */}
-          <ellipse cx="35" cy="54" rx="11" ry="8" fill="rgba(255,255,255,0.18)" />
-          {/* 쪼개진 윗부분(속살) */}
-          <ellipse cx="45" cy="47" rx="19" ry="10" fill="#FDE68A" />
-          <ellipse cx="43" cy="44" rx="11" ry="6"  fill="#FFFBEB" opacity="0.55" />
-          {/* 눈 흰자 */}
-          <circle cx="33" cy="65" r="9" fill="white" />
-          <circle cx="57" cy="65" r="9" fill="white" />
-          {/* 눈동자 */}
-          <circle cx="34" cy="66" r="5.5" fill="#1E1B4B" />
-          <circle cx="58" cy="66" r="5.5" fill="#1E1B4B" />
-          {/* 눈 반짝 */}
-          <circle cx="36" cy="63" r="2.5" fill="white" />
-          <circle cx="60" cy="63" r="2.5" fill="white" />
-          {/* 볼터치 */}
-          <ellipse cx="20" cy="75" rx="9" ry="5.5" fill="#FDA4AF" opacity="0.65" />
-          <ellipse cx="70" cy="75" rx="9" ry="5.5" fill="#FDA4AF" opacity="0.65" />
-          {/* 입 */}
-          <path d="M30 84 Q45 96 60 84" stroke="#1E1B4B" strokeWidth="3" fill="none" strokeLinecap="round" />
-          {/* 팔 */}
-          <ellipse cx="12"  cy="74" rx="13" ry="7" fill="#5B21B6" transform="rotate(-20 12 74)" />
-          <ellipse cx="78" cy="74" rx="13" ry="7" fill="#5B21B6" transform="rotate(20 78 74)" />
-        </svg>
+        {isCarrot ? <MiniCarrot /> : <MiniGoguma />}
       </div>
     </div>
   )
@@ -109,7 +139,7 @@ function DirtParticles() {
 }
 
 // ── 걷는 고구마 본체 ──────────────────────────────────
-function WalkerGoguma({ digging }: { digging: boolean }) {
+function WalkerGoguma({ digging, surprised }: { digging: boolean; surprised: boolean }) {
   return (
     <svg width="74" height="92" viewBox="0 0 158 200" fill="none">
       <defs>
@@ -172,10 +202,20 @@ function WalkerGoguma({ digging }: { digging: boolean }) {
         <ellipse cx="41"  cy="120" rx="13" ry="8"  fill="#FDA4AF" opacity="0.6" />
         <ellipse cx="117" cy="120" rx="13" ry="8"  fill="#FDA4AF" opacity="0.6" />
 
-        {/* 입 - 캐는 중엔 집중, 아닐 땐 활짝 */}
-        {digging
-          ? <path d="M59 137 Q79 146 99 137" stroke="#1E1B4B" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-          : <path d="M57 136 Q79 154 101 136" stroke="#1E1B4B" strokeWidth="3.2" fill="none" strokeLinecap="round" />
+        {/* 눈썹 - 놀랐을 때만 치켜올라감 */}
+        {surprised && (
+          <>
+            <path d="M47 84 Q59 76 71 83" stroke="#1E1B4B" strokeWidth="3.4" fill="none" strokeLinecap="round" />
+            <path d="M87 83 Q99 76 111 84" stroke="#1E1B4B" strokeWidth="3.4" fill="none" strokeLinecap="round" />
+          </>
+        )}
+
+        {/* 입 - 놀라면 'O', 캐는 중엔 집중, 아닐 땐 활짝 */}
+        {surprised
+          ? <ellipse cx="79" cy="142" rx="8" ry="10" fill="#1E1B4B" />
+          : digging
+            ? <path d="M59 137 Q79 146 99 137" stroke="#1E1B4B" strokeWidth="3.2" fill="none" strokeLinecap="round" />
+            : <path d="M57 136 Q79 154 101 136" stroke="#1E1B4B" strokeWidth="3.2" fill="none" strokeLinecap="round" />
         }
 
         {/* 몸통 결무늬 */}
@@ -240,7 +280,9 @@ export default function GogumaField() {
 
   const [dug,         setDug]         = useState<Set<number>>(new Set())
   const [fresh,       setFresh]       = useState<Set<number>>(new Set())
+  const [carrots,     setCarrots]     = useState<Set<number>>(new Set())
   const [digging,     setDigging]     = useState(false)
+  const [surprised,   setSurprised]   = useState(false)
   const [facingRight, setFacingRight] = useState(true)
 
   useEffect(() => {
@@ -264,16 +306,26 @@ export default function GogumaField() {
           nowDigging = true
           dugCooldownRef.current.add(spot.id)
 
-          setDug(prev   => new Set([...prev,   spot.id]))
-          setFresh(prev => new Set([...prev,   spot.id]))
+          // 가끔(약 30%) 당근이 나옴 → 고구마가 깜짝 놀람
+          const isCarrot = Math.random() < 0.3
+
+          setDug(prev   => new Set([...prev, spot.id]))
+          setFresh(prev => new Set([...prev, spot.id]))
+
+          if (isCarrot) {
+            setCarrots(prev => new Set([...prev, spot.id]))
+            setSurprised(true)
+            setTimeout(() => setSurprised(false), 1300)
+          }
 
           // 반짝 효과 제거
           setTimeout(() => {
             setFresh(prev => { const n = new Set(prev); n.delete(spot.id); return n })
           }, 750)
-          // 고구마 다시 땅속으로
+          // 아이템 다시 땅속으로
           setTimeout(() => {
-            setDug(prev => { const n = new Set(prev); n.delete(spot.id); return n })
+            setDug(prev     => { const n = new Set(prev); n.delete(spot.id); return n })
+            setCarrots(prev => { const n = new Set(prev); n.delete(spot.id); return n })
             // 쿨다운 해제 (한 바퀴 돌고 다시 캘 수 있게)
             setTimeout(() => dugCooldownRef.current.delete(spot.id), 3500)
           }, 3000)
@@ -353,7 +405,7 @@ export default function GogumaField() {
           style={{ left: `${spot.x}%`, bottom: 72, transform: 'translateX(-50%)' }}
         >
           <div className="relative">
-            <BuriedGoguma visible={dug.has(spot.id)} fresh={fresh.has(spot.id)} />
+            <BuriedItem visible={dug.has(spot.id)} fresh={fresh.has(spot.id)} isCarrot={carrots.has(spot.id)} />
             {fresh.has(spot.id) && <DirtParticles />}
           </div>
           {/* 흙 봉우리 */}
@@ -375,7 +427,25 @@ export default function GogumaField() {
         className="absolute"
         style={{ bottom: 64, left: '8%', transform: 'translateX(-50%)' }}
       >
-        <WalkerGoguma digging={digging} />
+        <div style={{ animation: surprised ? 'surprised-jump 0.5s ease-out' : undefined, position: 'relative' }}>
+          {/* 놀랐을 때 '!' 말풍선 (좌우 반전 보정) */}
+          {surprised && (
+            <div
+              className="absolute font-black"
+              style={{
+                top: -20,
+                left: '50%',
+                transform: `translateX(-50%) ${facingRight ? '' : 'scaleX(-1)'}`,
+                fontSize: 24,
+                color: '#ef4444',
+                textShadow: '0 1px 2px rgba(0,0,0,0.15)',
+              }}
+            >
+              ❗
+            </div>
+          )}
+          <WalkerGoguma digging={digging} surprised={surprised} />
+        </div>
       </div>
 
       {/* CSS 키프레임 */}
@@ -392,6 +462,13 @@ export default function GogumaField() {
           0%   { opacity: 0.85; transform: translate(0,0) scale(1); }
           60%  { opacity: 0.5; }
           100% { opacity: 0;   transform: translate(var(--tx,0px),var(--ty,-30px)) scale(0.15); }
+        }
+        @keyframes surprised-jump {
+          0%   { transform: translateY(0); }
+          25%  { transform: translateY(-16px); }
+          45%  { transform: translateY(-4px); }
+          65%  { transform: translateY(-11px); }
+          100% { transform: translateY(0); }
         }
       `}</style>
     </div>

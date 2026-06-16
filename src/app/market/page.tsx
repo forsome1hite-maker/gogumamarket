@@ -4,43 +4,87 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import ProductCard from '@/components/ProductCard'
 import GogumaField from '@/components/GogumaField'
+import MarketControls from '@/components/MarketControls'
 
-export default async function MarketPage() {
+export default async function MarketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string; category?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/auth/signin')
 
-  // 프로필 + 상품 목록 + 판매자 닉네임 병렬 조회
+  // 정렬/카테고리 선택값 읽기
+  const sp       = await searchParams
+  const sort     = sp.sort ?? 'latest'
+  const category = sp.category ?? null
+
+  // 상품 목록 쿼리 (카테고리 필터 + 정렬 적용)
+  let productsQuery = supabase
+    .from('products')
+    .select('id, title, price, category, condition, location, created_at, status, views, user_id, image_urls')
+    .eq('status', 'selling')
+
+  if (category) productsQuery = productsQuery.eq('category', category)
+
+  if (sort === 'price_asc')       productsQuery = productsQuery.order('price', { ascending: true })
+  else if (sort === 'price_desc') productsQuery = productsQuery.order('price', { ascending: false })
+  else                            productsQuery = productsQuery.order('created_at', { ascending: false })
+
+  productsQuery = productsQuery.limit(50)
+
+  // 프로필 + 상품 목록 병렬 조회
   const [{ data: profile }, { data: products }] = await Promise.all([
     supabase
       .from('profiles')
       .select('nickname, email, avatar_url, created_at')
       .eq('id', user.id)
       .single(),
-    supabase
-      .from('products')
-      .select('id, title, price, category, condition, location, created_at, status, views, user_id, image_urls')
-      .eq('status', 'selling')
-      .order('created_at', { ascending: false })
-      .limit(50),
+    productsQuery,
   ])
 
   const nickname = profile?.nickname ?? user.email?.split('@')[0] ?? '고구마'
 
-  // 판매자 닉네임 조회
-  const userIds = [...new Set((products ?? []).map(p => p.user_id))]
-  const { data: sellers } = userIds.length
-    ? await supabase.from('profiles').select('id, nickname').in('id', userIds)
-    : { data: [] }
+  // 판매자 닉네임 + 좋아요 수 + 댓글 수 조회
+  const userIds    = [...new Set((products ?? []).map(p => p.user_id))]
+  const productIds = (products ?? []).map(p => p.id)
+
+  const [{ data: sellers }, { data: likeRows }, { data: commentRows }] = await Promise.all([
+    userIds.length
+      ? supabase.from('profiles').select('id, nickname').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+    productIds.length
+      ? supabase.from('product_likes').select('product_id').in('product_id', productIds)
+      : Promise.resolve({ data: [] }),
+    productIds.length
+      ? supabase.from('product_comments').select('product_id').in('product_id', productIds)
+      : Promise.resolve({ data: [] }),
+  ])
 
   const sellerMap = Object.fromEntries((sellers ?? []).map(s => [s.id, s.nickname]))
+
+  // 상품별 좋아요/댓글 수 세기
+  const likeCountMap: Record<string, number> = {}
+  for (const r of likeRows ?? []) {
+    likeCountMap[r.product_id] = (likeCountMap[r.product_id] ?? 0) + 1
+  }
+  const commentCountMap: Record<string, number> = {}
+  for (const r of commentRows ?? []) {
+    commentCountMap[r.product_id] = (commentCountMap[r.product_id] ?? 0) + 1
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-violet-50">
       <Header user={user} nickname={nickname} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+
+        {/* 고구마 밭 씬 (맨 위) */}
+        <div className="mb-6">
+          <GogumaField />
+        </div>
 
         {/* 환영 배너 */}
         <div className="bg-gradient-to-r from-violet-600 to-violet-400 rounded-3xl p-6 mb-6 text-white shadow-lg shadow-violet-200">
@@ -56,10 +100,15 @@ export default async function MarketPage() {
 
         {/* 프로필 요약 */}
         <div className="bg-white rounded-2xl border border-violet-100 p-5 mb-6 flex items-center gap-4 shadow-sm">
-          <div className="w-14 h-14 rounded-full bg-violet-100 flex items-center justify-center text-2xl font-black text-violet-600 shrink-0">
-            {nickname.slice(0, 1)}
+          <div className="w-14 h-14 rounded-full bg-violet-100 overflow-hidden flex items-center justify-center text-2xl font-black text-violet-600 shrink-0">
+            {profile?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar_url} alt={nickname} className="w-full h-full object-cover" />
+            ) : (
+              nickname.slice(0, 1)
+            )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-bold text-gray-800">{nickname}</p>
             <p className="text-sm text-gray-400 truncate">{profile?.email ?? user.email}</p>
             <p className="text-xs text-violet-400 mt-0.5">
@@ -67,6 +116,20 @@ export default async function MarketPage() {
                 ? new Date(profile.created_at).toLocaleDateString('ko-KR')
                 : '-'}
             </p>
+          </div>
+          <div className="flex flex-col gap-1.5 shrink-0">
+            <Link
+              href={`/users/${user.id}`}
+              className="px-3 py-1.5 text-xs font-bold text-violet-700 bg-violet-100 hover:bg-violet-200 rounded-lg transition-all text-center"
+            >
+              내 프로필
+            </Link>
+            <Link
+              href="/profile/edit"
+              className="px-3 py-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all text-center"
+            >
+              편집
+            </Link>
           </div>
         </div>
 
@@ -93,14 +156,11 @@ export default async function MarketPage() {
           ))}
         </div>
 
-        {/* 고구마 밭 씬 */}
-        <GogumaField />
-
         {/* 상품 목록 */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-black text-violet-800">
-              최근 올라온 물건 🍠
+              {category ? `${category} 🍠` : '최근 올라온 물건 🍠'}
               {products && products.length > 0 && (
                 <span className="ml-2 text-sm font-medium text-violet-400">
                   {products.length}개
@@ -109,6 +169,9 @@ export default async function MarketPage() {
             </h2>
           </div>
 
+          {/* 정렬 / 카테고리 필터 */}
+          <MarketControls sort={sort} category={category} />
+
           {products && products.length > 0 ? (
             <div className="flex flex-col gap-3">
               {products.map(product => (
@@ -116,6 +179,8 @@ export default async function MarketPage() {
                   key={product.id}
                   product={product}
                   nickname={sellerMap[product.user_id] ?? '고구마'}
+                  likeCount={likeCountMap[product.id] ?? 0}
+                  commentCount={commentCountMap[product.id] ?? 0}
                 />
               ))}
             </div>
