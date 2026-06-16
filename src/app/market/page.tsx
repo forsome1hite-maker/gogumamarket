@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import ProductCard from '@/components/ProductCard'
+import GogumaField from '@/components/GogumaField'
 
 export default async function MarketPage() {
   const supabase = await createClient()
@@ -91,6 +92,9 @@ export default async function MarketPage() {
             </button>
           ))}
         </div>
+
+        {/* 고구마 밭 씬 */}
+        <GogumaField />
 
         {/* 상품 목록 */}
         <section>
