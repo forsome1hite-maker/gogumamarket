@@ -1,24 +1,35 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES, CONDITIONS } from '@/lib/constants'
 
 interface Product {
   id:          string
+  user_id:     string
   title:       string
   category:    string
   condition:   string
   price:       number
   description: string
   location:    string | null
+  image_urls:  string[] | null
 }
+
+const MAX_IMAGES = 5
 
 export default function EditForm({ product }: { product: Product }) {
   const router   = useRouter()
   const supabase = createClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [existingUrls, setExistingUrls] = useState<string[]>(product.image_urls ?? [])
+  const [removedUrls,  setRemovedUrls]  = useState<string[]>([])
+  const [newFiles,     setNewFiles]     = useState<File[]>([])
+  const [newPreviews,  setNewPreviews]  = useState<string[]>([])
 
   const [title,       setTitle]       = useState(product.title)
   const [category,    setCategory]    = useState(product.category)
@@ -29,6 +40,33 @@ export default function EditForm({ product }: { product: Product }) {
   const [location,    setLocation]    = useState(product.location ?? '')
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState('')
+
+  const totalCount = existingUrls.length + newFiles.length
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    const remaining = MAX_IMAGES - totalCount
+    const toAdd = files.slice(0, remaining)
+    setNewFiles(prev => [...prev, ...toAdd])
+    toAdd.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = ev => {
+        setNewPreviews(prev => [...prev, ev.target!.result as string])
+      }
+      reader.readAsDataURL(file)
+    })
+    e.target.value = ''
+  }
+
+  const removeExisting = (url: string) => {
+    setExistingUrls(prev => prev.filter(u => u !== url))
+    setRemovedUrls(prev => [...prev, url])
+  }
+
+  const removeNew = (index: number) => {
+    setNewFiles(prev => prev.filter((_, i) => i !== index))
+    setNewPreviews(prev => prev.filter((_, i) => i !== index))
+  }
 
   const displayPrice = price ? parseInt(price).toLocaleString('ko-KR') : ''
 
@@ -53,6 +91,33 @@ export default function EditForm({ product }: { product: Product }) {
 
     setLoading(true)
 
+    // 1. 삭제할 기존 이미지를 Storage에서 제거
+    if (removedUrls.length > 0) {
+      const paths = removedUrls.map(url => {
+        const marker = '/product-images/'
+        return url.slice(url.indexOf(marker) + marker.length)
+      })
+      await supabase.storage.from('product-images').remove(paths)
+    }
+
+    // 2. 새 이미지 업로드
+    const newUrls: string[] = []
+    for (let i = 0; i < newFiles.length; i++) {
+      const file = newFiles[i]
+      const ext  = file.name.split('.').pop() ?? 'jpg'
+      const path = `${product.user_id}/${product.id}/${Date.now()}-${i}.${ext}`
+      const { error: uploadErr } = await supabase.storage
+        .from('product-images')
+        .upload(path, file)
+      if (!uploadErr) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(path)
+        newUrls.push(publicUrl)
+      }
+    }
+
+    // 3. 상품 정보 업데이트
     const { error: dbError } = await supabase
       .from('products')
       .update({
@@ -62,6 +127,7 @@ export default function EditForm({ product }: { product: Product }) {
         category,
         condition,
         location:    location.trim() || null,
+        image_urls:  [...existingUrls, ...newUrls],
       })
       .eq('id', product.id)
 
@@ -77,6 +143,84 @@ export default function EditForm({ product }: { product: Product }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pb-10">
+
+      {/* ── 사진 ── */}
+      <section className="bg-white rounded-2xl border border-violet-100 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-bold text-gray-700">
+            사진
+            <span className="text-gray-400 font-normal text-xs ml-1">(최대 {MAX_IMAGES}장)</span>
+          </label>
+          <span className="text-xs text-violet-400 font-medium">{totalCount} / {MAX_IMAGES}</span>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          {/* 추가 버튼 */}
+          {totalCount < MAX_IMAGES && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-20 h-20 rounded-xl border-2 border-dashed border-violet-200 flex flex-col items-center justify-center gap-1 text-violet-400 hover:border-violet-400 hover:bg-violet-50 transition-all shrink-0"
+            >
+              <span className="text-2xl leading-none">+</span>
+              <span className="text-xs">사진 추가</span>
+            </button>
+          )}
+
+          {/* 기존 이미지 */}
+          {existingUrls.map((url, i) => (
+            <div key={url} className="relative w-20 h-20 rounded-xl overflow-hidden border border-violet-100 shrink-0">
+              <Image src={url} alt={`기존 이미지 ${i + 1}`} fill className="object-cover" sizes="80px" />
+              {i === 0 && existingUrls.length + newFiles.length > 0 && (
+                <span className="absolute bottom-0 left-0 right-0 text-center text-[10px] font-bold bg-violet-600/80 text-white py-0.5">
+                  대표
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => removeExisting(url)}
+                className="absolute top-1 right-1 w-5 h-5 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center text-xs leading-none transition-all"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          {/* 새로 추가한 이미지 */}
+          {newPreviews.map((src, i) => (
+            <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-violet-100 shrink-0">
+              <Image src={src} alt={`새 이미지 ${i + 1}`} fill className="object-cover" sizes="80px" />
+              {existingUrls.length === 0 && i === 0 && (
+                <span className="absolute bottom-0 left-0 right-0 text-center text-[10px] font-bold bg-violet-600/80 text-white py-0.5">
+                  대표
+                </span>
+              )}
+              <span className="absolute top-1 left-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                <span className="text-[8px] text-white font-bold">새</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => removeNew(i)}
+                className="absolute top-1 right-1 w-5 h-5 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center text-xs leading-none transition-all"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
+          onChange={handleImageChange}
+          className="hidden"
+        />
+        <p className="text-xs text-gray-400 mt-2">
+          첫 번째 사진이 대표 이미지로 사용돼요. × 버튼으로 삭제할 수 있어요.
+        </p>
+      </section>
 
       {/* ── 제목 ── */}
       <section className="bg-white rounded-2xl border border-violet-100 p-5 shadow-sm">

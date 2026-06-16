@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import StatusChanger from '@/components/StatusChanger'
 import DeleteButton from '@/components/DeleteButton'
+import ImageGallery from '@/components/ImageGallery'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,18 +86,13 @@ export default async function ProductDetailPage({
           </span>
         </div>
 
-        {/* 이미지 영역 */}
-        <div className="relative bg-white rounded-3xl border border-violet-100 h-72 flex flex-col items-center justify-center shadow-sm mb-4 overflow-hidden">
-          <span className="text-8xl">🍠</span>
-          <p className="text-xs text-violet-300 mt-3">사진 준비 중</p>
-          {product.status !== 'selling' && (
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-3xl">
-              <span className={`text-2xl font-black px-6 py-2 rounded-2xl ${statusInfo.color}`}>
-                {statusInfo.label}
-              </span>
-            </div>
-          )}
-        </div>
+        {/* 이미지 갤러리 */}
+        <ImageGallery
+          images={product.image_urls ?? []}
+          status={product.status}
+          statusLabel={statusInfo.label}
+          statusColor={statusInfo.color}
+        />
 
         {/* 판매자 정보 */}
         <div className="bg-white rounded-2xl border border-violet-100 p-4 mb-4 flex items-center gap-3 shadow-sm">

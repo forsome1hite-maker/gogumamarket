@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 const CONDITION_LABELS: Record<string, string> = {
   new:           '새상품',
@@ -27,6 +28,7 @@ interface Product {
   status:      string
   views:       number
   user_id:     string
+  image_urls?: string[] | null
 }
 
 interface Props {
@@ -35,14 +37,28 @@ interface Props {
 }
 
 export default function ProductCard({ product, nickname }: Props) {
+  const thumbnail = product.image_urls?.[0]
+
   return (
     <Link
       href={`/products/${product.id}`}
       className="bg-white rounded-2xl border border-violet-100 hover:border-violet-300 hover:shadow-md transition-all flex gap-4 p-4 group"
     >
-      {/* 이미지 자리 */}
-      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-4xl shrink-0 group-hover:bg-violet-100 transition-colors">
-        🍠
+      {/* 썸네일 */}
+      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-violet-50 border border-violet-100 shrink-0 group-hover:border-violet-200 transition-colors flex items-center justify-center">
+        {thumbnail ? (
+          <div className="relative w-full h-full">
+            <Image
+              src={thumbnail}
+              alt={product.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 96px, 112px"
+            />
+          </div>
+        ) : (
+          <span className="text-4xl">🍠</span>
+        )}
       </div>
 
       {/* 내용 */}

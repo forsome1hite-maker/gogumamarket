@@ -19,7 +19,7 @@ export default async function MarketPage() {
       .single(),
     supabase
       .from('products')
-      .select('id, title, price, category, condition, location, created_at, status, views, user_id')
+      .select('id, title, price, category, condition, location, created_at, status, views, user_id, image_urls')
       .eq('status', 'selling')
       .order('created_at', { ascending: false })
       .limit(50),
